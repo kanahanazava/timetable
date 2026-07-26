@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS Timetable — Slot Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2A4A;
+    --ink-soft:#3D4451;
+    --paper:#F7F5F0;
+    --paper-raised:#FFFFFF;
+    --gold:#B8862E;
+    --gold-soft:#EFE1BE;
+    --maroon:#8B3A3A;
+    --line:#D9D4C6;
+    --success:#3B7A57;
+    --sticky-bg:rgba(247,245,240,0.94);
+    --zebra:#FBFAF6;
+    --btn-bg:#1B2A4A;
+    --btn-fg:#FFFFFF;
+    --btn-border:#1B2A4A;
+    font-size:16px;
+  }
+  html[data-theme="dark"]{
+    --ink:#E8E8E8;
+    --ink-soft:#ABABAB;
+    --paper:#1E1E1E;
+    --paper-raised:#252526;
+    --gold:#D7BA7D;
+    --gold-soft:#3A331F;
+    --maroon:#F48771;
+    --line:#3C3C3C;
+    --success:#89D185;
+    --sticky-bg:rgba(30,30,30,0.94);
+    --zebra:#242424;
+    --btn-bg:#D7BA7D;
+    --btn-fg:#1E1E1E;
+    --btn-border:#D7BA7D;
+  }
+  body{transition:background-color .2s ease, color .2s ease;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink-soft);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1400px;margin:0 auto;padding:0 28px 80px;}
+
+  header.top{
+    padding:36px 28px 22px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    max-width:1400px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:34px;
+    color:var(--ink);
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .term-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    padding:6px 12px;
+    border-radius:2px;
+    background:var(--paper-raised);
+  }
+  .theme-toggle{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink);
+    background:var(--paper-raised);
+    border:1px solid var(--ink);
+    padding:8px 14px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:background-color .2s ease, color .2s ease;
+  }
+  .theme-toggle:hover{background:var(--gold-soft);}
+
+  /* Filters */
+  .filters{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--sticky-bg);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    padding:16px 28px;
+    margin:0 -28px 28px;
+  }
+  .filters-inner{
+    max-width:1400px;
+    margin:0 auto;
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;min-width:200px;flex:1 1 200px;}
+  .field label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ink);
+    font-weight:600;
+  }
+  .multiselect{position:relative;}
+  .ms-trigger{
+    width:100%;
+    text-align:left;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:9px 12px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .ms-trigger:hover{border-color:var(--ink);}
+  .ms-trigger .count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    background:var(--gold-soft);
+    color:var(--ink);
+    padding:1px 7px;
+    border-radius:10px;
+    min-width:18px;
+    text-align:center;
+  }
+  .ms-panel{
+    display:none;
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;
+    min-width:260px;
+    max-height:280px;
+    overflow-y:auto;
+    background:var(--paper-raised);
+    border:1px solid var(--ink);
+    border-radius:3px;
+    box-shadow:0 8px 24px rgba(27,42,74,0.14);
+    padding:8px;
+    z-index:50;
+  }
+  .ms-panel.open{display:block;}
+  .ms-search{
+    width:100%;
+    padding:7px 9px;
+    margin-bottom:6px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    font-size:12.5px;
+    font-family:'IBM Plex Sans', sans-serif;
+    box-sizing:border-box;
+  }
+  .ms-option{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 8px;
+    border-radius:2px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .ms-option:hover{background:var(--paper);}
+  .ms-option input{accent-color:var(--ink);}
+  .ms-clear{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--maroon);
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:6px 8px 2px;
+  }
+  .searchbox{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:9px 12px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13.5px;
+    width:100%;
+  }
+  .reset-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    background:none;
+    border:1px solid var(--maroon);
+    color:var(--maroon);
+    padding:9px 14px;
+    border-radius:2px;
+    cursor:pointer;
+    height:38px;
+  }
+  .reset-btn:hover{background:var(--maroon);color:#fff;}
+
+  /* SVG timetable container */
+  .tt-panel{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px;
+    overflow-x:auto;
+  }
+  .tt-panel svg{display:block;min-width:1180px;}
+
+  .actions{
+    display:flex;
+    gap:12px;
+    margin:18px 0 40px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:.04em;
+    padding:11px 18px;
+    border-radius:2px;
+    cursor:pointer;
+    border:1px solid var(--btn-border);
+    background:var(--btn-bg);
+    color:var(--btn-fg);
+    font-weight:600;
+    transition:opacity .15s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .btn.secondary{
+    background:transparent;
+    color:var(--ink);
+    border-color:var(--ink);
+  }
+  .btn.secondary:hover{background:var(--gold-soft);}
+  .btn:hover{opacity:.82;}
+  .hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  .toast{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--success);
+    align-self:center;
+    opacity:0;
+    transition:opacity .25s ease;
+  }
+  .toast.show{opacity:1;}
+
+  /* Course table */
+  .table-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .table-head h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:22px;
+    color:var(--ink);
+    margin:0;
+  }
+  .table-head .sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  table.course-table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+  }
+  table.course-table thead th{
+    text-align:left;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ink);
+    background:var(--gold-soft);
+    padding:11px 14px;
+    border-bottom:2px solid var(--ink);
+    white-space:nowrap;
+  }
+  table.course-table td{
+    padding:11px 14px;
+    font-size:13.5px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  table.course-table td.slot-cell{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    color:var(--maroon);
+    white-space:nowrap;
+  }
+  table.course-table td.code-cell{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:500;
+    color:var(--ink);
+    white-space:nowrap;
+  }
+  table.course-table tbody tr:nth-child(even){background:var(--zebra);}
+  table.course-table tbody tr:hover{background:var(--gold-soft);}
+  .empty-row td{
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--ink-soft);
+    padding:32px 14px;
+  }
+
+  @media (max-width:720px){
+    header.top{padding:26px 18px 18px;}
+    h1{font-size:26px;}
+    .filters{padding:14px 18px;margin:0 -18px 22px;}
+    .wrap{padding:0 18px 60px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="eyebrow">Department of Computer Science</span>
+    <h1>Course Timetable</h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="term-tag">Autumn Semester</span>
+    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+      <span id="themeToggleLabel">Dark mode</span>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="filters">
+    <div class="filters-inner">
+      <div class="field">
+        <label for="courseSearch">Search</label>
+        <input id="courseSearch" class="searchbox" type="text" placeholder="Course code, name, or instructor…">
+      </div>
+      <div class="field">
+        <label>Course code</label>
+        <div class="multiselect" id="ms-course">
+          <button type="button" class="ms-trigger" data-target="ms-course">
+            <span class="ms-label">All courses</span>
+            <span class="count" style="display:none;">0</span>
+          </button>
+          <div class="ms-panel">
+            <input class="ms-search" type="text" placeholder="Filter list…" data-for="ms-course">
+            <div class="ms-options" id="ms-course-options"></div>
+            <button type="button" class="ms-clear" data-clear="ms-course">Clear selection</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Slot code</label>
+        <div class="multiselect" id="ms-slot">
+          <button type="button" class="ms-trigger" data-target="ms-slot">
+            <span class="ms-label">All slots</span>
+            <span class="count" style="display:none;">0</span>
+          </button>
+          <div class="ms-panel">
+            <input class="ms-search" type="text" placeholder="Filter list…" data-for="ms-slot">
+            <div class="ms-options" id="ms-slot-options"></div>
+            <button type="button" class="ms-clear" data-clear="ms-slot">Clear selection</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Instructor</label>
+        <div class="multiselect" id="ms-instructor">
+          <button type="button" class="ms-trigger" data-target="ms-instructor">
+            <span class="ms-label">All instructors</span>
+            <span class="count" style="display:none;">0</span>
+          </button>
+          <div class="ms-panel">
+            <input class="ms-search" type="text" placeholder="Filter list…" data-for="ms-instructor">
+            <div class="ms-options" id="ms-instructor-options"></div>
+            <button type="button" class="ms-clear" data-clear="ms-instructor">Clear selection</button>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="reset-btn" id="resetAll">Reset all</button>
+    </div>
+  </div>
+
+  <div class="tt-panel" id="ttPanel"></div>
+
+  <div class="table-head">
+    <h2>Course details</h2>
+    <span class="sub" id="tableCount">Select a filter to see matching courses</span>
+  </div>
+  <table class="course-table">
+    <thead>
+      <tr><th>Slot</th><th>Course</th><th>Venue</th><th>Course name</th><th>Instructor</th></tr>
+    </thead>
+    <tbody id="courseTbody"></tbody>
+  </table>
+
+  <div class="actions">
+    <button class="btn" id="downloadSvg">Download SVG</button>
+    <button class="btn secondary" id="copySvg">Copy SVG to clipboard</button>
+    <button class="btn secondary" id="downloadPng">Download PNG</button>
+    <span class="hint">Exports include the course details table</span>
+    <span class="toast" id="toast">Copied to clipboard</span>
+  </div>
+
+</div>
+
+<script>
+/* ---------------------------------------------------------------------
+   1. DATA
+--------------------------------------------------------------------- */
+const COURSES = [
+  {
+    "courseCode": "CS101",
+    "slot": "7,10",
+    "venue": "LA 201",
+    "courseName": "Computer Programming and Utilization",
+    "instructor": "Prof. Abir De"
+  },
+  {
+    "courseCode": "CS105",
+    "slot": "6",
+    "venue": "LH 301",
+    "courseName": "Discrete Structures",
+    "instructor": "Prof. Bharat Adsul"
+  },
+  {
+    "courseCode": "CS213",
+    "slot": "1",
+    "venue": "",
+    "courseName": "Data Structures and Algorithms",
+    "instructor": "Prof. Manoj Prabhakaran"
+  },
+  {
+    "courseCode": "CS215",
+    "slot": "3",
+    "venue": "",
+    "courseName": "Data Analysis and Interpretation",
+    "instructor": "Prof. Sharat Chandran"
+  },
+  {
+    "courseCode": "CS228",
+    "slot": "4",
+    "venue": "",
+    "courseName": "Logic for Computer Science",
+    "instructor": "Prof. S. Akshay"
+  },
+  {
+    "courseCode": "CS230",
+    "slot": "2",
+    "venue": "",
+    "courseName": "Digital Logic Design and Computer Architecture",
+    "instructor": "Prof. Sayandeep"
+  },
+  {
+    "courseCode": "CS231",
+    "slot": "L4",
+    "venue": "SL2",
+    "courseName": "Digital Logic Design and Computer Architecture Lab",
+    "instructor": "Prof. Biswabandan Panda"
+  },
+  {
+    "courseCode": "CS293",
+    "slot": "L2",
+    "venue": "SL2",
+    "courseName": "Data Structures and Algorithms Lab",
+    "instructor": "Prof. Manoj Prabhakaran"
+  },
+  {
+    "courseCode": "CS310",
+    "slot": "2",
+    "venue": "",
+    "courseName": "Automata Theory",
+    "instructor": "Prof. Krishna S."
+  },
+  {
+    "courseCode": "CS347",
+    "slot": "M5",
+    "venue": "",
+    "courseName": "Operating Systems",
+    "instructor": "Prof. Varsha Apte"
+  },
+  {
+    "courseCode": "CS339",
+    "slot": "3",
+    "venue": "",
+    "courseName": "Abstractions and Paradigms for Programming",
+    "instructor": "Prof. Manas Thakur"
+  },
+  {
+    "courseCode": "CS348",
+    "slot": "1",
+    "venue": "",
+    "courseName": "Computer Networks",
+    "instructor": "Prof. Bhaskaran Raman"
+  },
+  {
+    "courseCode": "CS355",
+    "slot": "L3",
+    "venue": "SL2",
+    "courseName": "Programming Paradigms Laboratory",
+    "instructor": "Prof. Manas Thakur"
+  },
+  {
+    "courseCode": "CS378",
+    "slot": "L1",
+    "venue": "SL2",
+    "courseName": "Computer Networks Lab",
+    "instructor": "Prof. Bhaskaran Raman"
+  },
+  {
+    "courseCode": "CS409 / CS6011",
+    "slot": "6",
+    "venue": "CC103",
+    "courseName": "Introduction to Cryptography",
+    "instructor": "Prof. Sruthi Sekar"
+  },
+  {
+    "courseCode": "CS409M",
+    "slot": "5",
+    "venue": "CC101",
+    "courseName": "Introduction to Cryptography",
+    "instructor": "Prof. Chethan Kamath"
+  },
+  {
+    "courseCode": "CS416M",
+    "slot": "5",
+    "venue": "KR125",
+    "courseName": "Computer and Network Security",
+    "instructor": "Prof. G. Sivakumar"
+  },
+  {
+    "courseCode": "CS405 / CS6001",
+    "slot": "11",
+    "venue": "",
+    "courseName": "Game Theory and Algorithmic Mechanism Design",
+    "instructor": "Prof. Swaprava Nath"
+  },
+  {
+    "courseCode": "CS6007",
+    "slot": "9",
+    "venue": "CC101",
+    "courseName": "Multi-Agent Machine Learning (MAML)",
+    "instructor": "Prof. Avishek Ghosh"
+  },
+  {
+    "courseCode": "CS601",
+    "slot": "8",
+    "venue": "CC103",
+    "courseName": "Algorithms and Complexity",
+    "instructor": "Prof. Akash Kumar"
+  },
+  {
+    "courseCode": "CS602",
+    "slot": "10",
+    "venue": "",
+    "courseName": "Applied Algorithms",
+    "instructor": "Prof. Sujoy Bhore"
+  },
+  {
+    "courseCode": "CS604",
+    "slot": "9",
+    "venue": "KR125",
+    "courseName": "Combinatorics",
+    "instructor": "Prof. Sundar Vishwanathan"
+  },
+  {
+    "courseCode": "CS6101",
+    "slot": "10",
+    "venue": "CC103",
+    "courseName": "Indexing and Retrieving Text and Graphs",
+    "instructor": "Prof. Soumen Chakrabarti"
+  },
+  {
+    "courseCode": "CS616",
+    "slot": "11",
+    "venue": "",
+    "courseName": "Parallelizing Compilers",
+    "instructor": "Prof. Milind Girkar"
+  },
+  {
+    "courseCode": "CS618",
+    "slot": "7",
+    "venue": "CC105",
+    "courseName": "Program Analysis",
+    "instructor": "Prof. Uday Khedker"
+  },
+  {
+    "courseCode": "CS631",
+    "slot": "3",
+    "venue": "CC103",
+    "courseName": "Implementation Techniques for Relational Database Systems",
+    "instructor": "Prof. S. Sudarshan"
+  },
+  {
+    "courseCode": "CS632",
+    "slot": "2",
+    "venue": "CC103",
+    "courseName": "Advanced Database Management Systems",
+    "instructor": "Prof. Suraj Shetiya"
+  },
+  {
+    "courseCode": "CS663",
+    "slot": "7",
+    "venue": "",
+    "courseName": "Fundamentals of Digital Image Processing",
+    "instructor": "Prof. Suyash Awate"
+  },
+  {
+    "courseCode": "CS675",
+    "slot": "4",
+    "venue": "CC103",
+    "courseName": "Computer Graphics",
+    "instructor": "Prof. Parag Chaudhuri"
+  },
+  {
+    "courseCode": "CS683",
+    "slot": "12",
+    "venue": "CC103",
+    "courseName": "Advanced Computer Architecture",
+    "instructor": "Prof. Biswabandan Panda"
+  },
+  {
+    "courseCode": "CS699",
+    "slot": "LX",
+    "venue": "SL2",
+    "courseName": "Software Lab",
+    "instructor": "Prof. Vishwas Bhargava"
+  },
+  {
+    "courseCode": "CS721",
+    "slot": "11",
+    "venue": "CC101",
+    "courseName": "Introduction to Computational Complexity",
+    "instructor": "Prof. Vishwas Bhargava"
+  },
+  {
+    "courseCode": "CS725",
+    "slot": "6",
+    "venue": "",
+    "courseName": "Foundations of Machine Learning",
+    "instructor": "Prof. Sunita Sarawagi"
+  },
+  {
+    "courseCode": "CS740",
+    "slot": "12",
+    "venue": "",
+    "courseName": "Mathematics for Visual Computing",
+    "instructor": "Prof. Ajit Rajwade"
+  },
+  {
+    "courseCode": "CS744",
+    "slot": "5",
+    "venue": "CC103",
+    "courseName": "Design and Engineering of Computing Systems",
+    "instructor": "Prof. Purushottam S."
+  },
+  {
+    "courseCode": "CS767",
+    "slot": "8",
+    "venue": "CC101",
+    "courseName": "Theoretical Machine Learning",
+    "instructor": "Prof. Arpit Agarwal"
+  },
+  {
+    "courseCode": "CS769",
+    "slot": "8",
+    "venue": "",
+    "courseName": "Optimization In Machine Learning",
+    "instructor": "Prof. Ganesh R."
+  },
+  {
+    "courseCode": "CS771",
+    "slot": "10",
+    "venue": "CC105",
+    "courseName": "Foundations of Verification and Automated Reasoning",
+    "instructor": "Prof. Paritosh K. Pandya"
+  },
+  {
+    "courseCode": "CS782",
+    "slot": "3",
+    "venue": "",
+    "courseName": "Algebra and Computation",
+    "instructor": "Prof. Milind Sohoni"
+  },
+  {
+    "courseCode": "CS787",
+    "slot": "8",
+    "venue": "",
+    "courseName": "Language Engineering for Complex Programs: A C++ Perspective",
+    "instructor": "Prof. R. K. Joshi"
+  },
+  {
+    "courseCode": "CS6013",
+    "slot": "7",
+    "venue": "CC101",
+    "courseName": "Efficient AI",
+    "instructor": "Prof. Aditya Desai"
+  },
+  {
+    "courseCode": "CS6008",
+    "slot": "10",
+    "venue": "CC101",
+    "courseName": "Network Security",
+    "instructor": "Prof. Devashish Gosain"
+  },
+  {
+    "courseCode": "CS7001",
+    "slot": "6",
+    "venue": "CC101",
+    "courseName": "Robot Perception and Learning",
+    "instructor": "Prof. Nived Chebrolu"
+  }
+];
+
+/* ---------------------------------------------------------------------
+   2. TIMETABLE GRID DEFINITION
+   Each occupied cell carries a "logical" slot code (matching the
+   codes used in the course data, e.g. "1", "L2", "LX") alongside the
+   "display" label printed on the grid (e.g. "1A", "1B", "1C" all
+   represent logical slot "1" recurring on different days). Cells with
+   no matching course data (X1/X2/X3/XA/XB/XE and the tutorial-group
+   digits) keep logical:null — they render but are never filterable,
+   since the source dataset has no courses assigned to them.
+--------------------------------------------------------------------- */
+const PERIODS = [
+  {key:'p1', label:'8:00-9:25'},
+  {key:'p2', label:'9:30-10:25'},
+  {key:'p3', label:'10:35-11:30'},
+  {key:'p4', label:'11:35-12:30'},
+  {key:'lunch', label:'', isLunch:true},
+  {key:'p5', label:'2:00-3:25'},
+  {key:'p6', label:'3:30-4:55'},
+  {key:'p7', label:'5:05-6:00'},
+];
+
+const DAYS = ['Mon','Tue','Wed','Thu','Fri'];
+
+/* ---------------------------------------------------------------------
+   3. SLOT SORT ORDER (for the course table)
+--------------------------------------------------------------------- */
+const SLOT_ORDER = ['1','2','3','4','5','6','7','8','9','10','11','12',
+  'L1','L2','L3','L4','L5','L6','LX','M5','X1','X2','X3','XA','XB','XE'];
+
+function slotSortKey(slotField){
+  const first = slotField.split(',')[0].trim();
+  const idx = SLOT_ORDER.indexOf(first);
+  return idx === -1 ? SLOT_ORDER.length + first.charCodeAt(0) : idx;
+}
+
+/* ---------------------------------------------------------------------
+   4. FILTER STATE
+--------------------------------------------------------------------- */
+const state = {
+  courses: new Set(),
+  slots: new Set(),
+  instructors: new Set(),
+  search: ''
+};
+
+function hasAnyFilter(){
+  return state.courses.size > 0 || state.slots.size > 0 || state.instructors.size > 0 || state.search !== '';
+}
+
+const allCourseCodes = [...new Set(COURSES.map(c=>c.courseCode))].sort();
+const allSlotCodes = [...new Set(COURSES.flatMap(c=>c.slot.split(',').map(s=>s.trim())))]
+  .sort((a,b)=>slotSortKey(a)-slotSortKey(b));
+const allInstructors = [...new Set(COURSES.map(c=>c.instructor))].sort();
+
+/* ---------------------------------------------------------------------
+   5. MULTISELECT UI
+--------------------------------------------------------------------- */
+function buildMultiselect(id, options, stateSet, labelSingular, labelPlural){
+  const container = document.getElementById(id + '-options');
+  container.innerHTML = '';
+  options.forEach(opt=>{
+    const row = document.createElement('label');
+    row.className = 'ms-option';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = opt;
+    const span = document.createElement('span');
+    span.textContent = opt;
+    row.appendChild(cb);
+    row.appendChild(span);
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) stateSet.add(opt); else stateSet.delete(opt);
+      updateTriggerLabel(id, stateSet, labelSingular, labelPlural);
+      render();
+    });
+    container.appendChild(row);
+  });
+}
+
+function updateTriggerLabel(id, stateSet, labelSingular, labelPlural){
+  const trigger = document.querySelector(`.ms-trigger[data-target="${id}"]`);
+  const labelEl = trigger.querySelector('.ms-label');
+  const countEl = trigger.querySelector('.count');
+  if(stateSet.size === 0){
+    labelEl.textContent = labelPlural;
+    countEl.style.display = 'none';
+  } else {
+    labelEl.textContent = stateSet.size === 1 ? [...stateSet][0] : labelSingular;
+    countEl.style.display = 'inline-block';
+    countEl.textContent = stateSet.size;
+  }
+}
+
+buildMultiselect('ms-course', allCourseCodes, state.courses, 'courses selected', 'All courses');
+buildMultiselect('ms-slot', allSlotCodes, state.slots, 'slots selected', 'All slots');
+buildMultiselect('ms-instructor', allInstructors, state.instructors, 'instructors selected', 'All instructors');
+
+document.querySelectorAll('.ms-trigger').forEach(btn=>{
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const panel = btn.parentElement.querySelector('.ms-panel');
+    const wasOpen = panel.classList.contains('open');
+    document.querySelectorAll('.ms-panel').forEach(p=>p.classList.remove('open'));
+    if(!wasOpen) panel.classList.add('open');
+  });
+});
+document.addEventListener('click', ()=>{
+  document.querySelectorAll('.ms-panel').forEach(p=>p.classList.remove('open'));
+});
+document.querySelectorAll('.ms-panel').forEach(p=>p.addEventListener('click', e=>e.stopPropagation()));
+
+document.querySelectorAll('.ms-search').forEach(inp=>{
+  inp.addEventListener('input', ()=>{
+    const target = inp.dataset.for;
+    const q = inp.value.toLowerCase();
+    document.querySelectorAll(`#${target}-options .ms-option`).forEach(row=>{
+      row.style.display = row.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+  });
+});
+
+document.querySelectorAll('.ms-clear').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const id = btn.dataset.clear;
+    const set = id==='ms-course'?state.courses : id==='ms-slot'?state.slots : state.instructors;
+    set.clear();
+    document.querySelectorAll(`#${id}-options input`).forEach(cb=>cb.checked=false);
+    const labelPlural = id==='ms-course'?'All courses': id==='ms-slot'?'All slots':'All instructors';
+    const labelSingular = id==='ms-course'?'courses selected': id==='ms-slot'?'slots selected':'instructors selected';
+    updateTriggerLabel(id, set, labelSingular, labelPlural);
+    render();
+  });
+});
+
+document.getElementById('courseSearch').addEventListener('input', (e)=>{
+  state.search = e.target.value.trim().toLowerCase();
+  render();
+});
+
+document.getElementById('resetAll').addEventListener('click', ()=>{
+  state.courses.clear(); state.slots.clear(); state.instructors.clear(); state.search='';
+  document.getElementById('courseSearch').value='';
+  document.querySelectorAll('.ms-options input').forEach(cb=>cb.checked=false);
+  updateTriggerLabel('ms-course', state.courses, 'courses selected', 'All courses');
+  updateTriggerLabel('ms-slot', state.slots, 'slots selected', 'All slots');
+  updateTriggerLabel('ms-instructor', state.instructors, 'instructors selected', 'All instructors');
+  render();
+});
+
+/* ---------------------------------------------------------------------
+   6. FILTERING LOGIC
+   No filter active -> nothing shown. Each filter added narrows the
+   result further (logical AND across categories, OR within a
+   category), updating instantly on every change.
+--------------------------------------------------------------------- */
+function getFilteredCourses(){
+  if(!hasAnyFilter()) return [];
+  return COURSES.filter(c=>{
+    if(state.courses.size && state.courses.has(c.courseCode)) return true;
+    if(state.instructors.size && state.instructors.has(c.instructor)) return true;
+    if(state.slots.size){
+      const tokens = c.slot.split(',').map(s=>s.trim());
+      if(tokens.some(t=>state.slots.has(t))) return true;
+    }
+    if(state.search){
+      const hay = (c.courseCode+' '+c.courseName+' '+c.instructor+' '+c.slot).toLowerCase();
+      if(hay.includes(state.search)) return true;
+    }
+    return false;
+  });
+}
+
+// logical slot code -> course, built fresh from whatever is currently filtered
+function buildSlotMap(filtered){
+  const map = {};
+  filtered.forEach(c=>{
+    c.slot.split(',').map(s=>s.trim()).forEach(tok=>{ map[tok] = c; });
+  });
+  return map;
+}
+
+/* ---------------------------------------------------------------------
+   7. SVG TIMETABLE RENDERING
+--------------------------------------------------------------------- */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const COL_W = 148;
+const LUNCH_W = 118;
+const ROWLABEL_W = 96;
+const ROW_H = 92;
+const HEAD_H = 54;
+let INK = '#1B2A4A';
+let GOLD = '#B8862E';
+let MAROON = '#8B3A3A';
+let SVG_BG = '#FFFFFF';
+let HEADER_FILL = '#BFD3E8';
+let LINE_COLOR = '#D9D4C6';
+
+const SVG_THEMES = {
+  light: { ink:'#1B2A4A', gold:'#B8862E', maroon:'#8B3A3A', bg:'#FFFFFF', header:'#BFD3E8', line:'#D9D4C6' },
+  dark:  { ink:'#E8E8E8', gold:'#D7BA7D', maroon:'#F48771', bg:'#1E1E1E', header:'#2D2D2D', line:'#3C3C3C' }
+};
+
+function applySvgTheme(name){
+  const t = SVG_THEMES[name];
+  INK = t.ink; GOLD = t.gold; MAROON = t.maroon;
+  SVG_BG = t.bg; HEADER_FILL = t.header; LINE_COLOR = t.line;
+}
+
+function periodX(){
+  let x = ROWLABEL_W;
+  const xs = {};
+  PERIODS.forEach(p=>{
+    xs[p.key] = x;
+    x += p.isLunch ? LUNCH_W : COL_W;
+  });
+  xs.__end = x;
+  return xs;
+}
+const XS = periodX();
+const GRID_TOTAL_W = XS.__end;
+const GRID_TOTAL_H = HEAD_H + ROW_H * DAYS.length;
+
+/* ---------------------------------------------------------------------
+   Per-day cell layout, in explicit pixel coordinates.
+   Most days use four equal AM periods (p1-p4) and three equal PM
+   periods (p5-p7). Wednesday and Friday break that pattern: their lab
+   pair (6A/7A, 6B/7B) — and, on Wednesday, the X-block/LX + XA pair —
+   each occupy 1.5 periods rather than a plain 2-and-1 split, so the
+   divider between them sits mid-column rather than on a period
+   boundary. Each cell carries its "logical" slot code(s) (matching
+   the course data, e.g. "1", "L2", "LX") alongside the "display"
+   label printed on the grid. logical:null means the source dataset
+   has no course assigned to that position — it renders but never
+   fills.
+--------------------------------------------------------------------- */
+function threeWaySplit(startX){
+  // p2+p3+p4 (or p5+p6+p7) together = 3*COL_W, split into two 1.5-wide cells
+  return { wA: COL_W*1.5, wB: COL_W*1.5, xA: startX, xB: startX + COL_W*1.5 };
+}
+
+const DAY_LAYOUT = {
+  Mon: [
+    {x:XS.p1, w:COL_W, main:[{logical:null, display:'XE'}]},
+    {x:XS.p2, w:COL_W, main:[{logical:'1', display:'1A'}]},
+    {x:XS.p3, w:COL_W, main:[{logical:'2', display:'2A'}]},
+    {x:XS.p4, w:COL_W, main:[{logical:'3', display:'3A'}]},
+    {x:XS.p5, w:COL_W, main:[{logical:'8', display:'8A'}], sub:{logical:'L1', display:'L'}},
+    {x:XS.p6, w:COL_W, main:[{logical:'9', display:'9A'}], sub:{logical:null, display:'1'}},
+    {x:XS.p7, w:COL_W, main:[{logical:'12', display:'12A'}]},
+  ],
+  Tue: [
+    {x:XS.p1, w:COL_W, main:[{logical:'4', display:'4A'}]},
+    {x:XS.p2, w:COL_W, main:[{logical:'1', display:'1B'}]},
+    {x:XS.p3, w:COL_W, main:[{logical:'2', display:'2B'}]},
+    {x:XS.p4, w:COL_W, main:[{logical:'3', display:'3B'}]},
+    {x:XS.p5, w:COL_W, main:[{logical:'10', display:'10A'}], sub:{logical:'L2', display:'L'}},
+    {x:XS.p6, w:COL_W, main:[{logical:'11', display:'11A'}], sub:{logical:null, display:'2'}},
+    {x:XS.p7, w:COL_W, main:[{logical:'12', display:'12B'}]},
+  ],
+  Wed: (() => {
+    const am = threeWaySplit(XS.p2);
+    return [
+      {x:XS.p1, w:COL_W, main:[{logical:'5', display:'5A'}]},
+      {x:am.xA, w:am.wA, main:[{logical:'6', display:'6A'}], sub:{logical:null, display:'L5'}},
+      {x:am.xB, w:am.wB, main:[{logical:'7', display:'7A'}]},
+      {x:XS.p5, w:COL_W*2, main:[{logical:null, display:'X1'},{logical:null, display:'X2'},{logical:null, display:'X3'}], sub:{logical:'LX', display:'LX'}},
+      {x:XS.p7, w:COL_W, main:[{logical:null, display:'XA'}]},
+    ];
+  })(),
+  Thu: [
+    {x:XS.p1, w:COL_W, main:[{logical:'4', display:'4B'}]},
+    {x:XS.p2, w:COL_W, main:[{logical:'1', display:'1C'}]},
+    {x:XS.p3, w:COL_W, main:[{logical:'2', display:'2C'}]},
+    {x:XS.p4, w:COL_W, main:[{logical:'3', display:'3C'}]},
+    {x:XS.p5, w:COL_W, main:[{logical:'8', display:'8B'}], sub:{logical:'L3', display:'L'}},
+    {x:XS.p6, w:COL_W, main:[{logical:'9', display:'9B'}], sub:{logical:null, display:'3'}},
+    {x:XS.p7, w:COL_W, main:[{logical:'12', display:'12C'}]},
+  ],
+  Fri: (() => {
+    const am = threeWaySplit(XS.p2);
+    return [
+      {x:XS.p1, w:COL_W, main:[{logical:'5', display:'5B'}]},
+      {x:am.xA, w:am.wA, main:[{logical:'6', display:'6B'}], sub:{logical:null, display:'L6'}},
+      {x:am.xB, w:am.wB, main:[{logical:'7', display:'7B'}]},
+      {x:XS.p5, w:COL_W, main:[{logical:'10', display:'10B'}], sub:{logical:'L4', display:'L'}},
+      {x:XS.p6, w:COL_W, main:[{logical:'11', display:'11B'}], sub:{logical:null, display:'4'}},
+      {x:XS.p7, w:COL_W, main:[{logical:null, display:'XB'}]},
+    ];
+  })(),
+};
+
+function el(tag, attrs, text){
+  const e = document.createElementNS(SVG_NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(text !== undefined) e.textContent = text;
+  return e;
+}
+
+// Draws the grid into an existing <svg>, offset by (0, offsetY).
+function drawGrid(svg, filtered, offsetY){
+  const slotMap = buildSlotMap(filtered);
+
+  svg.appendChild(el('rect', {x:0,y:offsetY,width:GRID_TOTAL_W,height:GRID_TOTAL_H,fill:SVG_BG}));
+
+  // header
+  svg.appendChild(el('rect', {x:0,y:offsetY,width:ROWLABEL_W,height:HEAD_H,fill:HEADER_FILL,stroke:INK}));
+  svg.appendChild(el('text', {x:ROWLABEL_W/2,y:offsetY+HEAD_H/2+5,'text-anchor':'middle','font-family':"'IBM Plex Sans', sans-serif",'font-size':13,'font-weight':600,fill:INK}, 'Time/Day'));
+
+  PERIODS.forEach(p=>{
+    const x = XS[p.key];
+    const w = p.isLunch ? LUNCH_W : COL_W;
+    if(p.isLunch){
+      svg.appendChild(el('rect', {x,y:offsetY,width:w,height:GRID_TOTAL_H,fill:SVG_BG,stroke:INK}));
+      'LUNCH RECESS'.split('').forEach((ch,i)=>{
+        svg.appendChild(el('text', {
+          x:x+w/2, y: offsetY+26 + i*20, 'text-anchor':'middle',
+          'font-family':"'IBM Plex Mono', monospace", 'font-size':13,'font-weight':700, fill:MAROON
+        }, ch));
+      });
+      svg.appendChild(el('text', {
+        x:x+w/2, y: offsetY+GRID_TOTAL_H-16, 'text-anchor':'middle',
+        'font-family':"'IBM Plex Mono', monospace", 'font-size':11.5,'font-weight':700, fill:MAROON
+      }, '12:30–1:55 PM'));
+    } else {
+      svg.appendChild(el('rect', {x,y:offsetY,width:w,height:HEAD_H,fill:HEADER_FILL,stroke:INK}));
+      svg.appendChild(el('text', {
+        x:x+w/2, y:offsetY+HEAD_H/2+5, 'text-anchor':'middle',
+        'font-family':"'IBM Plex Sans', sans-serif", 'font-size':13,'font-weight':600, fill:INK
+      }, p.label));
+    }
+  });
+
+  DAYS.forEach((day, di)=>{
+    const y = offsetY + HEAD_H + di*ROW_H;
+    svg.appendChild(el('rect', {x:0,y,width:ROWLABEL_W,height:ROW_H,fill:SVG_BG,stroke:INK}));
+    svg.appendChild(el('text', {
+      x:ROWLABEL_W/2, y:y+ROW_H/2+5, 'text-anchor':'middle',
+      'font-family':"'IBM Plex Sans', sans-serif", 'font-size':13.5,'font-weight':600, fill:INK
+    }, day));
+
+    const cells = DAY_LAYOUT[day];
+
+    cells.forEach(cell=>{
+      const {x, w} = cell;
+
+      svg.appendChild(el('rect', {x,y,width:w,height:ROW_H,fill:SVG_BG,stroke:INK}));
+
+      const cellCenterX = x + w/2;
+      const codes = cell.main;
+      const activeEntry = codes.find(m=>m.logical && slotMap[m.logical]);
+      const subActive = cell.sub && cell.sub.logical && slotMap[cell.sub.logical];
+
+      // Only draw a slot label for the entry that actually has a matching
+      // course selected — everything else in the cell stays empty space.
+      if(activeEntry){
+        svg.appendChild(el('text', {
+          x:cellCenterX, y:y+30, 'text-anchor':'middle',
+          'font-family':"'IBM Plex Mono', monospace", 'font-size':13,'font-weight':700,
+          fill: INK
+        }, activeEntry.display));
+
+        const c = slotMap[activeEntry.logical];
+        svg.appendChild(el('text', {
+          x:cellCenterX, y:y+48, 'text-anchor':'middle',
+          'font-family':"'IBM Plex Sans', sans-serif", 'font-size':11, 'font-weight':600,
+          fill:GOLD
+        }, c.courseCode.length > 16 ? c.courseCode.slice(0,15)+'…' : c.courseCode));
+        if(c.venue){
+          svg.appendChild(el('text', {
+            x:cellCenterX, y:y+62, 'text-anchor':'middle',
+            'font-family':"'IBM Plex Mono', monospace", 'font-size':10, fill:INK
+          }, c.venue));
+        }
+      }
+
+      if(cell.sub && subActive){
+        const dashY = y + ROW_H - 14;
+        svg.appendChild(el('line', {
+          x1:x+10, x2:x+w-10, y1:dashY, y2:dashY,
+          stroke:MAROON, 'stroke-width':1, 'stroke-dasharray':'4,3'
+        }));
+        const sc = slotMap[cell.sub.logical];
+
+        if(activeEntry){
+          // Cell already has a main slot on display — keep the lab tag compact
+          // and tucked near the dashed line so it doesn't collide.
+          svg.appendChild(el('text', {
+            x:cellCenterX, y:dashY-16, 'text-anchor':'middle',
+            'font-family':"'IBM Plex Mono', monospace", 'font-size':10,'font-weight':700,
+            fill:MAROON
+          }, cell.sub.display));
+          svg.appendChild(el('text', {
+            x:cellCenterX, y:dashY-4, 'text-anchor':'middle',
+            'font-family':"'IBM Plex Sans', sans-serif", 'font-size':10,'font-weight':600,
+            fill:GOLD
+          }, sc.courseCode.length > 16 ? sc.courseCode.slice(0,15)+'…' : sc.courseCode));
+        } else {
+          // Nothing else in this cell — the lab slot IS the cell's content,
+          // so give it the same prominent, centered treatment as a normal
+          // slot label instead of a small tag squeezed against the dashes.
+          svg.appendChild(el('text', {
+            x:cellCenterX, y:y+30, 'text-anchor':'middle',
+            'font-family':"'IBM Plex Mono', monospace", 'font-size':13,'font-weight':700,
+            fill:INK
+          }, cell.sub.display));
+          svg.appendChild(el('text', {
+            x:cellCenterX, y:y+48, 'text-anchor':'middle',
+            'font-family':"'IBM Plex Sans', sans-serif", 'font-size':11,'font-weight':600,
+            fill:GOLD
+          }, sc.courseCode.length > 16 ? sc.courseCode.slice(0,15)+'…' : sc.courseCode));
+          if(sc.venue){
+            svg.appendChild(el('text', {
+              x:cellCenterX, y:y+62, 'text-anchor':'middle',
+              'font-family':"'IBM Plex Mono', monospace", 'font-size':10, fill:INK
+            }, sc.venue));
+          }
+        }
+      }
+    });
+  });
+
+  svg.appendChild(el('rect', {x:0.5,y:offsetY+0.5,width:GRID_TOTAL_W-1,height:GRID_TOTAL_H-1,fill:'none',stroke:INK,'stroke-width':1.5}));
+}
+
+/* ---------------------------------------------------------------------
+   8. COURSE TABLE — HTML (screen) and SVG (export)
+--------------------------------------------------------------------- */
+function sortedFiltered(filtered){
+  return [...filtered].sort((a,b)=>slotSortKey(a.slot)-slotSortKey(b.slot));
+}
+
+function renderTable(filtered){
+  const tbody = document.getElementById('courseTbody');
+  tbody.innerHTML = '';
+  const sorted = sortedFiltered(filtered);
+
+  if(!hasAnyFilter()){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Select a course, slot, instructor, or search term to see matching courses.</td></tr>`;
+    document.getElementById('tableCount').textContent = 'Select a filter to see matching courses';
+    return;
+  }
+
+  if(sorted.length === 0){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">No courses match the current filters.</td></tr>`;
+  } else {
+    sorted.forEach(c=>{
+      const tr = document.createElement('tr');
+      const tds = ['slot-cell','code-cell','','',''].map(cls=>{
+        const td = document.createElement('td');
+        if(cls) td.className = cls;
+        return td;
+      });
+      tds[0].textContent = c.slot;
+      tds[1].textContent = c.courseCode;
+      tds[2].textContent = c.venue || '';
+      tds[3].textContent = c.courseName;
+      tds[4].textContent = c.instructor;
+      tds.forEach(td=>tr.appendChild(td));
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById('tableCount').textContent =
+    `${sorted.length} course${sorted.length!==1?'s':''}`;
+}
+
+// Draws the course-details table into an existing <svg>, starting at offsetY.
+// Returns the total height consumed.
+function drawTableSVG(svg, filtered, offsetY){
+  const sorted = sortedFiltered(filtered);
+  const cols = [
+    {key:'slot',   label:'Slot',        w:70},
+    {key:'code',   label:'Course',      w:130},
+    {key:'venue',  label:'Venue',       w:90},
+    {key:'name',   label:'Course name', w:740},
+    {key:'instr',  label:'Instructor',  w:220},
+  ];
+  const titleH = 34;
+  const rowH = 26;
+  const headH = 28;
+
+  svg.appendChild(el('text', {
+    x:0, y:offsetY+titleH-10, 'font-family':"'Fraunces', serif", 'font-size':18,'font-weight':600, fill:INK
+  }, 'Course Details'));
+
+  let cy = offsetY + titleH;
+  let cx = 0;
+  svg.appendChild(el('rect', {x:0,y:cy,width:GRID_TOTAL_W,height:headH,fill:SVG_BG,stroke:INK}));
+  cols.forEach(col=>{
+    svg.appendChild(el('text', {
+      x:cx+10, y:cy+headH/2+4, 'font-family':"'IBM Plex Mono', monospace", 'font-size':10.5,'font-weight':700, fill:INK
+    }, col.label.toUpperCase()));
+    cx += col.w;
+  });
+  cy += headH;
+
+  if(sorted.length === 0){
+    svg.appendChild(el('rect', {x:0,y:cy,width:GRID_TOTAL_W,height:rowH*1.4,fill:SVG_BG,stroke:INK}));
+    svg.appendChild(el('text', {
+      x:GRID_TOTAL_W/2, y:cy+rowH*0.9, 'text-anchor':'middle',
+      'font-family':"'IBM Plex Mono', monospace", 'font-size':11.5, fill:INK
+    }, hasAnyFilter() ? 'No courses match the current filters.' : 'No filters selected.'));
+    cy += rowH*1.4;
+  } else {
+    sorted.forEach((c,i)=>{
+      const rowY = cy;
+      svg.appendChild(el('rect', {x:0,y:rowY,width:GRID_TOTAL_W,height:rowH, fill:SVG_BG, stroke:LINE_COLOR}));
+      let x = 0;
+      const values = [c.slot, c.courseCode, c.venue||'', truncate(c.courseName,84), truncate(c.instructor,30)];
+      cols.forEach((col,ci)=>{
+        svg.appendChild(el('text', {
+          x:x+10, y:rowY+rowH/2+4, 'font-family':"'IBM Plex Sans', sans-serif", 'font-size':11, fill:INK
+        }, values[ci]));
+        x += col.w;
+      });
+      cy += rowH;
+    });
+  }
+  svg.appendChild(el('rect', {x:0.5,y:offsetY+titleH+0.5,width:GRID_TOTAL_W-1,height:(cy-(offsetY+titleH))-1,fill:'none',stroke:INK,'stroke-width':1.2}));
+
+  return cy - offsetY;
+}
+
+function truncate(str, max){
+  if(!str) return '';
+  return str.length > max ? str.slice(0,max-1)+'…' : str;
+}
+
+/* ---------------------------------------------------------------------
+   9. MAIN RENDER (screen: grid only, table shown as HTML below)
+--------------------------------------------------------------------- */
+function render(){
+  const filtered = getFilteredCourses();
+  const panel = document.getElementById('ttPanel');
+  panel.innerHTML = '';
+  const svg = el('svg', {viewBox:`0 0 ${GRID_TOTAL_W} ${GRID_TOTAL_H}`, width:GRID_TOTAL_W, height:GRID_TOTAL_H});
+  drawGrid(svg, filtered, 0);
+  panel.appendChild(svg);
+  renderTable(filtered);
+}
+
+render();
+
+/* ---------------------------------------------------------------------
+   9b. DARK MODE
+--------------------------------------------------------------------- */
+const themeToggleBtn = document.getElementById('themeToggle');
+const themeToggleLabel = document.getElementById('themeToggleLabel');
+
+function setTheme(name){
+  document.documentElement.setAttribute('data-theme', name);
+  applySvgTheme(name);
+  themeToggleLabel.textContent = name === 'dark' ? 'Light mode' : 'Dark mode';
+  render();
+}
+
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+setTheme(prefersDark ? 'dark' : 'light');
+
+themeToggleBtn.addEventListener('click', ()=>{
+  const current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+/* ---------------------------------------------------------------------
+   10. EXPORT: combined grid + table SVG for download / copy / PNG
+--------------------------------------------------------------------- */
+const EXPORT_MARGIN = 28;
+
+function buildExportSVG(){
+  const filtered = getFilteredCourses();
+  const gap = 24;
+  const tableEstH = 34 + 28 + Math.max(1, sortedFiltered(filtered).length) * 26 + 10;
+  const contentW = GRID_TOTAL_W;
+  const contentH = GRID_TOTAL_H + gap + tableEstH;
+  const totalW = contentW + EXPORT_MARGIN * 2;
+  const totalH = contentH + EXPORT_MARGIN * 2;
+
+  const svg = el('svg', {viewBox:`0 0 ${totalW} ${totalH}`, width:totalW, height:totalH});
+  svg.appendChild(el('rect', {x:0,y:0,width:totalW,height:totalH,fill:SVG_BG}));
+
+  const g = el('g', {transform:`translate(${EXPORT_MARGIN},${EXPORT_MARGIN})`});
+  svg.appendChild(g);
+  drawGrid(g, filtered, 0);
+  drawTableSVG(g, filtered, GRID_TOTAL_H + gap);
+  return svg;
+}
+
+function serializeSvg(svgEl){
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('xmlns', SVG_NS);
+  return new XMLSerializer().serializeToString(clone);
+}
+
+document.getElementById('downloadSvg').addEventListener('click', ()=>{
+  const svg = buildExportSVG();
+  const svgStr = '<?xml version="1.0" encoding="UTF-8"?>\n' + serializeSvg(svg);
+  const blob = new Blob([svgStr], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'timetable.svg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('copySvg').addEventListener('click', async ()=>{
+  const svg = buildExportSVG();
+  const svgStr = serializeSvg(svg);
+  const toast = document.getElementById('toast');
+  try {
+    await navigator.clipboard.writeText(svgStr);
+    toast.textContent = 'Copied to clipboard';
+    toast.classList.add('show');
+  } catch(err){
+    toast.textContent = 'Copy failed — select and copy manually';
+    toast.classList.add('show');
+  }
+  setTimeout(()=>toast.classList.remove('show'), 2200);
+});
+
+document.getElementById('downloadPng').addEventListener('click', ()=>{
+  const svg = buildExportSVG();
+  const w = parseFloat(svg.getAttribute('width'));
+  const h = parseFloat(svg.getAttribute('height'));
+  const svgStr = serializeSvg(svg);
+  const toast = document.getElementById('toast');
+
+  // Data URIs load far more reliably than blob: URLs for <img> across browsers.
+  const svgDataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const scale = 2; // render at 2x for a crisper export
+      const canvas = document.createElement('canvas');
+      canvas.width = w * scale;
+      canvas.height = h * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob=>{
+        if(!blob){
+          toast.textContent = 'PNG export failed';
+          toast.classList.add('show');
+          setTimeout(()=>toast.classList.remove('show'), 2200);
+          return;
+        }
+        const pngUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = 'timetable.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(pngUrl);
+      }, 'image/png');
+    } catch(err){
+      toast.textContent = 'PNG export failed';
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 2200);
+    }
+  };
+  img.onerror = () => {
+    toast.textContent = 'PNG export failed';
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 2200);
+  };
+  img.src = svgDataUri;
+});
+</script>
+</body>
+</html>
